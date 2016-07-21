@@ -261,7 +261,7 @@ namespace TinyWindow
 	{
 		friend class windowManager;
 
-		windowManager*							_manager;
+		std::shared_ptr<windowManager>			_manager;
 		std::string								name;													/**< Name of the window */
 	public:
 
@@ -404,6 +404,9 @@ namespace TinyWindow
 #endif
 
 	public:
+
+		tWindow(const tWindow&) = delete;
+		tWindow& operator=(const tWindow&) = delete;
 
 		tWindow(void);
 
@@ -1050,11 +1053,17 @@ namespace TinyWindow
 #endif
 	};
 
-	class windowManager
+	class windowManager : public std::enable_shared_from_this<class windowManager>
 	{
 		friend class tWindow;
 
-		windowManager()
+	public:
+
+		windowManager(const windowManager&) = delete;
+		windowManager& operator=(const windowManager&) = delete;
+
+
+		windowManager(void)
 		{
 #if defined(TW_WINDOWS)
 
@@ -1066,18 +1075,10 @@ namespace TinyWindow
 				return;
 			}
 
-			screenResolution.x = WidthOfScreen(
-				XScreenOfDisplay(currentDisplay,
-				DefaultScreen(currentDisplay)));
-
-			screenResolution.y = HeightOfScreen(
-				XScreenOfDisplay(currentDisplay,
-				DefaultScreen(currentDisplay)));
+			screenResolution.x = WidthOfScreen(XScreenOfDisplay(currentDisplay, DefaultScreen(currentDisplay)));
+			screenResolution.y = HeightOfScreen(XScreenOfDisplay(currentDisplay, DefaultScreen(currentDisplay)));
 #endif
 		}
-	public:
-		windowManager(const windowManager&) = delete;
-		windowManager& operator=(const windowManager&) = delete;
 
 		/**
 		 * Shutdown and delete all windows in the manager
@@ -1102,7 +1103,7 @@ namespace TinyWindow
 		{
 			auto ptr = new W(/*args...*/);
 
-			((tWindow*)ptr)->_manager = this;
+			((tWindow*)ptr)->_manager = shared_from_this();
 			((tWindow*)ptr)->name = typeid(W).name();
 
 			if (!Platform_InitializeWindow(ptr))
@@ -3027,11 +3028,11 @@ namespace TinyWindow
 		}
 #endif
 	public:
-		static std::unique_ptr<TinyWindow::windowManager> New(void)
+		static std::shared_ptr<TinyWindow::windowManager> New(void)
 		{
-			return std::unique_ptr<TinyWindow::windowManager>(new TinyWindow::windowManager());
+			return std::make_shared<TinyWindow::windowManager>();
 		}
-	};
+			};
 
 	inline
 		void* twGetGLProc(const char* procname)
